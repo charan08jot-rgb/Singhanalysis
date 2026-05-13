@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Portfolio Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f6;
+    --surface: #ffffff;
+    --surface2: #f1f0ea;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-muted: #6b6a65;
+    --text-hint: #9e9d97;
+    --green-bg: #EAF3DE; --green-text: #27500A;
+    --red-bg: #FCEBEB;   --red-text: #A32D2D;
+    --blue-bg: #E6F1FB;  --blue-text: #0C447C;
+    --teal-bg: #E1F5EE;  --teal-text: #085041;
+    --amber-bg: #FAEEDA; --amber-text: #633806;
+    --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18; --surface: #242422; --surface2: #2c2c2a;
+      --border: rgba(255,255,255,0.1); --border-md: rgba(255,255,255,0.18);
+      --text: #f0efe9; --text-muted: #9e9d97; --text-hint: #6b6a65;
+      --green-bg: #173404; --green-text: #C0DD97;
+      --red-bg: #501313;   --red-text: #F7C1C1;
+      --blue-bg: #042C53;  --blue-text: #B5D4F4;
+      --teal-bg: #04342C;  --teal-text: #9FE1CB;
+      --amber-bg: #412402; --amber-text: #FAC775;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 { font-size: 18px; font-weight: 500; }
+  header p  { font-size: 13px; color: var(--text-muted); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 500; }
+  .metric-value.pos { color: var(--green-text); }
+  .metric-value.neg { color: var(--red-text); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 400;
+    padding: 6px 8px 8px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+  }
+  td { padding: 9px 8px 9px 0; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .ticker-cell { font-weight: 500; }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .badge-g { background: var(--green-bg); color: var(--green-text); }
+  .badge-r { background: var(--red-bg);   color: var(--red-text); }
+  .badge-b { background: var(--blue-bg);  color: var(--blue-text); }
+  .badge-a { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-t { background: var(--teal-bg);  color: var(--teal-text); }
+
+  .type-badge { font-size: 11px; padding: 2px 7px; border-radius: 99px; background: var(--surface2); color: var(--text-muted); }
+
+  .form-section {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; color: var(--text-muted); }
+  .form-group input,
+  .form-group select {
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #378ADD;
+    box-shadow: 0 0 0 2px rgba(55,138,221,0.15);
+  }
+
+  .btn {
+    font-size: 13px;
+    padding: 8px 18px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary {
+    background: #378ADD;
+    color: #fff;
+    border-color: #378ADD;
+  }
+  .btn-primary:hover { background: #185FA5; border-color: #185FA5; }
+  .btn-danger { color: var(--red-text); border-color: transparent; background: transparent; }
+  .btn-danger:hover { background: var(--red-bg); }
+
+  .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; color: var(--text-muted); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .info-box {
+    background: var(--blue-bg);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--blue-text);
+    margin-top: 10px;
+  }
+
+  .mwr-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .section-divider {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 1rem 0;
+  }
+
+  .def-table td { color: var(--text-muted); font-size: 13px; }
+  .def-table td:first-child { font-weight: 500; color: var(--text); width: 80px; }
+  .def-table td:last-child { text-align: right; font-weight: 500; color: var(--text); }
+
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    .container { padding: 1rem; }
+    .metric-value { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Portfolio Dashboard</h1>
+    <p id="header-sub">Add your securities below to get started</p>
+  </div>
+  <div id="header-date" style="font-size:13px;color:var(--text-muted)"></div>
+</header>
+
+<div class="container">
+
+  <div class="metric-grid" id="metrics">
+    <div class="metric"><div class="metric-label">Total invested</div><div class="metric-value">—</div></div>
+    <div class="metric"><div class="metric-label">Market value</div><div class="metric-value">—</div></div>
+    <div class="metric"><div class="metric-label">Total gain / loss</div><div class="metric-value">—</div></div>
+    <div class="metric"><div class="metric-label">Portfolio ROI</div><div class="metric-value">—</div></div>
+    <div class="metric"><div class="metric-label">Avg ROE</div><div class="metric-value">—</div></div>
+    <div class="metric"><div class="metric-label">SWR / yr (4%)</div><div class="metric-value">—</div></div>
+  </div>
+
+  <div class="form-section">
+    <div class="card-title">Add a security</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Ticker / Name</label>
+        <input id="in-ticker" placeholder="e.g. AAPL" maxlength="12">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="in-type">
+          <option>Stock</option>
+          <option>ETF</option>
+          <option>Bond</option>
+          <option>REIT</option>
+          <option>Crypto</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cost basis ($)</label>
+        <input id="in-cost" type="number" min="0" placeholder="e.g. 10000">
+      </div>
+      <div class="form-group">
+        <label>Market value ($)</label>
+        <input id="in-value" type="number" min="0" placeholder="e.g. 13500">
+      </div>
+      <div class="form-group">
+        <label>Shareholders' equity ($) <span style="color:var(--text-hint);font-size:11px">optional — for ROE</span></label>
+        <input id="in-equity" type="number" min="0" placeholder="e.g. 80000">
+      </div>
+      <div class="form-group">
+        <label>Net income ($) <span style="color:var(--text-hint);font-size:11px">optional — for ROE</span></label>
+        <input id="in-income" type="number" placeholder="e.g. 9800">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addHolding()">+ Add security</button>
+      <span id="form-error" style="font-size:12px;color:var(--red-text)"></span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Holdings</div>
+    <div id="holdings-wrap">
+      <div class="empty-state">No securities added yet. Use the form above to add your first holding.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Allocation by type</div>
+      <div id="alloc-empty" class="empty-state" style="padding:1rem">Add holdings to see allocation</div>
+      <div id="alloc-chart-wrap" style="display:none">
+        <div class="legend" id="alloc-legend"></div>
+        <div style="position:relative;height:220px">
+          <canvas id="allocChart" role="img" aria-label="Doughnut chart showing portfolio allocation by security type"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ROI by holding</div>
+      <div id="roi-empty" class="empty-state" style="padding:1rem">Add holdings to see ROI chart</div>
+      <div id="roi-chart-wrap" style="display:none">
+        <div style="position:relative" id="roi-canvas-wrap">
+          <canvas id="roiChart" role="img" aria-label="Bar chart showing ROI percentage per holding"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">MWR — Money-Weighted Return</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Enter your overall portfolio cash flows to calculate your annualised money-weighted return (IRR).</p>
+    <div class="mwr-row">
+      <div class="form-group">
+        <label>Initial investment ($)</label>
+        <input id="mwr-init" type="number" min="0" placeholder="e.g. 50000">
+      </div>
+      <div class="form-group">
+        <label>Current / final value ($)</label>
+        <input id="mwr-final" type="number" min="0" placeholder="e.g. 68000">
+      </div>
+      <div class="form-group">
+        <label>Years held</label>
+        <input id="mwr-years" type="number" min="0.1" step="0.1" placeholder="e.g. 3">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="calcMWR()">Calculate</button>
+      </div>
+    </div>
+    <div id="mwr-result" style="display:none" class="info-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Metric definitions</div>
+    <table class="def-table" style="font-size:13px">
+      <tbody>
+        <tr>
+          <td>ROI</td>
+          <td style="color:var(--text-muted)">Return on Investment — (Market Value − Cost Basis) ÷ Cost Basis × 100</td>
+          <td id="def-roi">—</td>
+        </tr>
+        <tr>
+          <td>ROE</td>
+          <td style="color:var(--text-muted)">Return on Equity — Net Income ÷ Shareholders' Equity × 100</td>
+          <td id="def-roe">—</td>
+        </tr>
+        <tr>
+          <td>MWR</td>
+          <td style="color:var(--text-muted)">Money-Weighted Return — annualised IRR of your cash flows</td>
+          <td id="def-mwr">—</td>
+        </tr>
+        <tr>
+          <td style="border-bottom:none">SWR</td>
+          <td style="color:var(--text-muted);border-bottom:none">Safe Withdrawal Rate — 4% of portfolio value per year (the "4% rule")</td>
+          <td id="def-swr" style="border-bottom:none">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-CA', {year:'numeric',month:'long',day:'numeric'});
+
+  let holdings = [];
+  let allocChart = null, roiChart = null;
+
+  const COLORS = ['#378ADD','#1D9E75','#D85A30','#7F77DD','#BA7517','#D4537E','#639922'];
+
+  function fmtMoney(n) {
+    if (isNaN(n)) return '—';
+    return '$' + Math.abs(Math.round(n)).toLocaleString();
+  }
+  function fmtPct(n, decimals=1) {
+    if (isNaN(n) || n === null) return '—';
+    return (n >= 0 ? '+' : '') + n.toFixed(decimals) + '%';
+  }
+  function roi(h) { return (h.value - h.cost) / h.cost * 100; }
+  function roe(h) { return h.equity > 0 ? h.income / h.equity * 100 : null; }
+
+  function addHolding() {
+    const ticker = document.getElementById('in-ticker').value.trim().toUpperCase();
+    const type   = document.getElementById('in-type').value;
+    const cost   = parseFloat(document.getElementById('in-cost').value);
+    const value  = parseFloat(document.getElementById('in-value').value);
+    const equity = parseFloat(document.getElementById('in-equity').value) || 0;
+    const income = parseFloat(document.getElementById('in-income').value) || 0;
+    const errEl  = document.getElementById('form-error');
+
+    if (!ticker)          { errEl.textContent = 'Please enter a ticker or name.'; return; }
+    if (isNaN(cost) || cost <= 0)  { errEl.textContent = 'Enter a valid cost basis.'; return; }
+    if (isNaN(value) || value <= 0){ errEl.textContent = 'Enter a valid market value.'; return; }
+
+    errEl.textContent = '';
+    holdings.push({ ticker, type, cost, value, equity, income });
+    ['in-ticker','in-cost','in-value','in-equity','in-income'].forEach(id => document.getElementById(id).value = '');
+    render();
+  }
+
+  function removeHolding(i) {
+    holdings.splice(i, 1);
+    render();
+  }
+
+  function render() {
+    renderMetrics();
+    renderTable();
+    renderAllocChart();
+    renderROIChart();
+    updateDefs();
+    document.getElementById('header-sub').textContent =
+      holdings.length === 0 ? 'Add your securities below to get started'
+      : holdings.length + ' securit' + (holdings.length === 1 ? 'y' : 'ies') + ' in portfolio';
+  }
+
+  function renderMetrics() {
+    if (holdings.length === 0) {
+      document.getElementById('metrics').innerHTML = `
+        <div class="metric"><div class="metric-label">Total invested</div><div class="metric-value">—</div></div>
+        <div class="metric"><div class="metric-label">Market value</div><div class="metric-value">—</div></div>
+        <div class="metric"><div class="metric-label">Total gain / loss</div><div class="metric-value">—</div></div>
+        <div class="metric"><div class="metric-label">Portfolio ROI</div><div class="metric-value">—</div></div>
+        <div class="metric"><div class="metric-label">Avg ROE</div><div class="metric-value">—</div></div>
+        <div class="metric"><div class="metric-label">SWR / yr (4%)</div><div class="metric-value">—</div></div>`;
+      return;
+    }
+
+    const totalCost  = holdings.reduce((s,h) => s + h.cost, 0);
+    const totalVal   = holdings.reduce((s,h) => s + h.value, 0);
+    const gain       = totalVal - totalCost;
+    const totalROI   = (totalVal - totalCost) / totalCost * 100;
+    const roeArr     = holdings.map(h => roe(h)).filter(v => v !== null);
+    const avgROE     = roeArr.length ? roeArr.reduce((a,b) => a+b, 0) / roeArr.length : null;
+    const swr        = totalVal * 0.04;
+
+    document.getElementById('metrics').innerHTML = `
+      <div class="metric"><div class="metric-label">Total invested</div><div class="metric-value">${fmtMoney(totalCost)}</div></div>
+      <div class="metric"><div class="metric-label">Market value</div><div class="metric-value">${fmtMoney(totalVal)}</div></div>
+      <div class="metric"><div class="metric-label">Total gain / loss</div><div class="metric-value ${gain>=0?'pos':'neg'}">${gain>=0?'+':'−'}${fmtMoney(Math.abs(gain))}</div></div>
+      <div class="metric"><div class="metric-label">Portfolio ROI</div><div class="metric-value ${totalROI>=0?'pos':'neg'}">${fmtPct(totalROI)}</div></div>
+      <div class="metric"><div class="metric-label">Avg ROE</div><div class="metric-value">${avgROE!==null?fmtPct(avgROE):'N/A'}</div></div>
+      <div class="metric"><div class="metric-label">SWR / yr (4%)</div><div class="metric-value">${fmtMoney(swr)}</div></div>`;
+  }
+
+  function renderTable() {
+    const wrap = document.getElementById('holdings-wrap');
+    if (holdings.length === 0) {
+      wrap.innerHTML = '<div class="empty-state">No securities added yet. Use the form above to add your first holding.</div>';
+      return;
+    }
+    const typeBadgeClass = { Stock:'badge-b', ETF:'badge-t', Bond:'badge-a', REIT:'badge-g', Crypto:'badge-r', Other:'' };
+    wrap.innerHTML = `<div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th style="width:16%">Ticker</th>
+        <th style="width:14%">Type</th>
+        <th style="width:16%">Cost basis</th>
+        <th style="width:16%">Mkt value</th>
+        <th style="width:13%">ROI</th>
+        <th style="width:13%">ROE</th>
+        <th style="width:12%"></th>
+      </tr></thead>
+      <tbody>
+        ${holdings.map((h,i) => {
+          const r = roi(h);
+          const e = roe(h);
+          const bc = typeBadgeClass[h.type] || '';
+          return `<tr>
+            <td class="ticker-cell">${h.ticker}</td>
+            <td><span class="badge ${bc}">${h.type}</span></td>
+            <td>${fmtMoney(h.cost)}</td>
+            <td>${fmtMoney(h.value)}</td>
+            <td><span class="badge ${r>=0?'badge-g':'badge-r'}">${fmtPct(r)}</span></td>
+            <td>${e!==null?`<span class="badge badge-b">${fmtPct(e)}</span>`:'<span style="color:var(--text-hint);font-size:12px">N/A</span>'}</td>
+            <td><button class="btn btn-danger" onclick="removeHolding(${i})">Remove</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  function renderAllocChart() {
+    const emptyEl = document.getElementById('alloc-empty');
+    const wrapEl  = document.getElementById('alloc-chart-wrap');
+    if (holdings.length === 0) { emptyEl.style.display='block'; wrapEl.style.display='none'; return; }
+    emptyEl.style.display = 'none'; wrapEl.style.display = 'block';
+
+    const types = [...new Set(holdings.map(h => h.type))];
+    const data  = types.map(t => holdings.filter(h => h.type===t).reduce((s,h) => s+h.value, 0));
+    const colors = COLORS.slice(0, types.length);
+    const total  = data.reduce((a,b) => a+b, 0);
+
+    document.getElementById('alloc-legend').innerHTML = types.map((t,i) =>
+      `<span><span class="legend-sq" style="background:${colors[i]}"></span>${t} ${(data[i]/total*100).toFixed(1)}%</span>`
+    ).join('');
+
+    if (allocChart) allocChart.destroy();
+    allocChart = new Chart(document.getElementById('allocChart'), {
+      type: 'doughnut',
+      data: { labels: types, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: 'transparent' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  function renderROIChart() {
+    const emptyEl = document.getElementById('roi-empty');
+    const wrapEl  = document.getElementById('roi-chart-wrap');
+    if (holdings.length === 0) { emptyEl.style.display='block'; wrapEl.style.display='none'; return; }
+    emptyEl.style.display = 'none'; wrapEl.style.display = 'block';
+
+    const labels = holdings.map(h => h.ticker);
+    const data   = holdings.map(h => parseFloat(roi(h).toFixed(2)));
+    const colors = data.map(v => v >= 0 ? '#1D9E75' : '#E24B4A');
+    const canvasWrap = document.getElementById('roi-canvas-wrap');
+    canvasWrap.style.height = Math.max(200, holdings.length * 42 + 60) + 'px';
+
+    if (roiChart) roiChart.destroy();
+    roiChart = new Chart(document.getElementById('roiChart'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'ROI %', data, backgroundColor: colors, borderWidth: 0, borderRadius: 4 }] },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { callback: v => v + '%' }, grid: { color: 'rgba(128,128,128,0.08)' } },
+          y: { grid: { display: false }, ticks: { autoSkip: false } }
+        }
+      }
+    });
+  }
+
+  function calcMWR() {
+    const init  = parseFloat(document.getElementById('mwr-init').value);
+    const final = parseFloat(document.getElementById('mwr-final').value);
+    const years = parseFloat(document.getElementById('mwr-years').value);
+    const resEl = document.getElementById('mwr-result');
+    if (isNaN(init)||isNaN(final)||isNaN(years)||init<=0||years<=0) {
+      resEl.style.display = 'block';
+      resEl.textContent = 'Please fill in all three fields with valid numbers.';
+      resEl.style.background = 'var(--red-bg)';
+      resEl.style.color = 'var(--red-text)';
+      return;
+    }
+    const mwr = (Math.pow(final / init, 1 / years) - 1) * 100;
+    resEl.style.display = 'block';
+    resEl.style.background = 'var(--blue-bg)';
+    resEl.style.color = 'var(--blue-text)';
+    resEl.textContent = `Your MWR is ${mwr >= 0 ? '+' : ''}${mwr.toFixed(2)}% per year — your $${Math.round(init).toLocaleString()} grew to $${Math.round(final).toLocaleString()} over ${years} year${years===1?'':'s'}.`;
+    document.getElementById('def-mwr').textContent = (mwr>=0?'+':'') + mwr.toFixed(2) + '%/yr';
+  }
+
+  function updateDefs() {
+    if (holdings.length === 0) return;
+    const totalCost = holdings.reduce((s,h) => s+h.cost, 0);
+    const totalVal  = holdings.reduce((s,h) => s+h.value, 0);
+    const totalROI  = (totalVal - totalCost) / totalCost * 100;
+    const roeArr    = holdings.map(h => roe(h)).filter(v => v !== null);
+    const avgROE    = roeArr.length ? roeArr.reduce((a,b) => a+b, 0) / roeArr.length : null;
+    document.getElementById('def-roi').textContent = fmtPct(totalROI);
+    document.getElementById('def-roe').textContent = avgROE !== null ? fmtPct(avgROE) : 'N/A';
+    document.getElementById('def-swr').textContent = fmtMoney(totalVal * 0.04) + '/yr';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.activeElement.closest('.form-section')) addHolding();
+  });
+</script>
+</body>
+</html>
